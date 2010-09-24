@@ -1,0 +1,33 @@
+#!/bin/bash
+
+oldsum=""
+unset supprimable
+n=0
+orig=""
+q="'\\''" # escaped quote.
+while read ab; do
+	sum="${ab%%  *}"
+	nom="${ab#*  }"
+	if [ "$sum" != "$oldsum" ]; then
+		if [ -n "$orig" ]; then
+			for i in "${supprimable[@]}"; do
+				if diff -q "$orig" "$i"; then
+					echo "rm '${i//\'/$q}'"
+				fi
+			done
+		fi
+		
+		unset supprimable
+		orig=""
+		n=0
+	fi
+	
+	if [ "${nom#$1}" != "$nom" ]; then
+		supprimable[n]="$nom"
+		n=$(($n+1))
+	else
+		orig="$nom"
+	fi
+	
+	oldsum="$sum"
+done
