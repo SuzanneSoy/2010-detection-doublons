@@ -44,7 +44,9 @@ sort | while read ab; do
 			done
 		else
 			# Pas de clone à l'extérieur, on affiche.
-			echo "$i"
+			for i in "${supprimable[@]}"; do
+				echo "$i"
+			done
 		fi
 		
 		unset supprimable
