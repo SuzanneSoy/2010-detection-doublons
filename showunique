@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$1" == "--help" -o "$1" == "-h" ]; then
+if [ -z "$1" -o "$1" == "--help" -o "$1" == "-h" ]; then
 	cat <<EOF
 Affiche les fichiers qui NE SONT PAS des doublons.
 Pour afficher les doublons, utilisez remdoubles.
