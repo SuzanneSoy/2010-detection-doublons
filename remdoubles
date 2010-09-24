@@ -42,7 +42,7 @@ unset supprimable
 n=0
 orig=""
 q="'\\''" # escaped quote.
-while read ab; do
+sort | while read ab; do
 	sum="${ab%%  *}"
 	nom="${ab#*  }"
 	if [ "$sum" != "$oldsum" ]; then
