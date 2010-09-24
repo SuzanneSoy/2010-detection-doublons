@@ -1,3 +1,7 @@
 Attention !
 
 Lisez le code source des scripts avant de les utiliser ! Normalement aucun d'eux ne supprime de fichiers sans une forte confirmation, mais on ne sait jamais...
+
+De plus, il est possible (en cas de collision de somme de contrôle) que remdoubles ne détecte pas certains doublons (mais il ne fera PAS de faux positifs, il utilise diff pour vérifier que les deux fichiers sont bien identiques avant de signaler un doublon.
+
+Pour ce qui est de showunique, il est possible qu'il ne signale pas certains fichiers qui n'ont pourtant pas de doublons (en cas de collision de somme de contrôle). Ne lui faites donc pas confiance, il est possible qu'il n'ait pas repéré certains fichiers non doublons.
