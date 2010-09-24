@@ -1,5 +1,42 @@
 #!/bin/bash
 
+if [ "$1" == "--help" -o "$1" == "-h" ]; then
+        cat <<EOF
+Affiche les fichiers qui SONT des doublons, sous forme d'un script
+  permettant leur suppression.
+Pour afficher les fichiers qui ne sont pas des doublons, utilisez
+  showunique.
+
+Syntaxe : remdoubles dossier-où-chercher-les-doublons < md5sums
+
+Exemple :
+  md5sums contient :
+    604c442629170d4bee5804b13e9a587f  ./a/fichier_un
+    a3d0c4f97abec8c2ceaaf83020f00809  ./b/fichier_deux
+    a3d0c4f97abec8c2ceaaf83020f00809  ./b/fichier_trois
+    604c442629170d4bee5804b13e9a587f  ./b/fichier_XYZ
+  Si on lance "remdoubles ./b/ < md5sums", il affichera
+    #!/bin/sh
+    
+    echo Si vous lancez ce script, il supprimera un grand nombre de fichiers dans ../zic2/ .
+    exit
+    
+    rm './b/fichier_XYZ'
+  car il est dans ./b/, ET a un fichier identique ailleurs que
+  dans ./b/ .
+  Il n'affichera pas ./a/fichier_un car il n'est pas dans ./b/
+  Il n'affichera pas ./b/fichier_deux ni ./b/fichier_trois car
+  ils n'ont pas de doublons en dehors de ./b/ .
+EOF
+	exit 1
+fi
+
+echo "#!/bin/sh"
+echo ""
+echo "echo Si vous lancez ce script, il supprimera un grand nombre de fichiers dans $1 ."
+echo "exit"
+echo ""
+
 oldsum=""
 unset supprimable
 n=0
