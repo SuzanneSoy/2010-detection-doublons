@@ -1,0 +1,63 @@
+#!/bin/bash
+
+if [ "$1" == "--help" -o "$1" == "-h" ]; then
+	cat <<EOF
+Affiche les fichiers qui NE SONT PAS des doublons.
+Pour afficher les doublons, utilisez remdoubles.
+
+Syntaxe : showunique dossier-où-chercher-les-doublons < md5sums
+
+Exemple :
+  md5sums contient :
+    604c442629170d4bee5804b13e9a587f  ./a/fichier_un
+    a3d0c4f97abec8c2ceaaf83020f00809  ./b/fichier_deux
+    a3d0c4f97abec8c2ceaaf83020f00809  ./b/fichier_trois
+    604c442629170d4bee5804b13e9a587f  ./b/fichier_XYZ
+  Si on lance "showunique ./b/ < md5sums", il affichera
+    ./b/fichier_deux
+    ./b/fichier_trois
+  car ils sont dans ./b/, et n'ont pas de fichiers identiques
+  ailleurs que dans ./b/ .
+  Il n'affichera pas ./a/fichier_un car il n'est pas dans ./b/
+  Il n'affichera pas ./b/fichier_XYZ car il a un doublon
+  en dehors de ./b/ .
+EOF
+	exit 1
+fi
+
+oldsum=""
+unset supprimable
+n=0
+orig=""
+while read ab; do
+	sum="${ab%%  *}"
+	nom="${ab#*  }"
+	if [ "$sum" != "$oldsum" ]; then
+		if [ -n "$orig" ]; then
+			for i in "${supprimable[@]}"; do
+				if diff -q "$orig" "$i"; then
+					:
+				else
+					# Pas de clone à l'extérieur, on affiche.
+					echo "$i"
+				fi
+			done
+		else
+			# Pas de clone à l'extérieur, on affiche.
+			echo "$i"
+		fi
+		
+		unset supprimable
+		orig=""
+		n=0
+	fi
+	
+	if [ "${nom#$1}" != "$nom" ]; then
+		supprimable[n]="$nom"
+		n=$(($n+1))
+	else
+		orig="$nom"
+	fi
+	
+	oldsum="$sum"
+done
