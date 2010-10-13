@@ -48,7 +48,7 @@ sort | while read ab; do
 	if [ "$sum" != "$oldsum" ]; then
 		if [ -n "$orig" ]; then
 			for i in "${supprimable[@]}"; do
-				if diff -q "$orig" "$i"; then
+				if diff -q "$orig" "$i" > /dev/null; then
 					echo "rm '${i//\'/$q}'"
 				fi
 			done
