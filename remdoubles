@@ -18,7 +18,7 @@ Exemple :
   Si on lance "remdoubles ./b/ < md5sums", il affichera
     #!/bin/sh
     
-    echo Si vous lancez ce script, il supprimera un grand nombre de fichiers dans ../zic2/ .
+    echo Si vous lancez ce script, il supprimera un grand nombre de fichiers dans ./b/ .
     exit
     
     rm './b/fichier_XYZ'
