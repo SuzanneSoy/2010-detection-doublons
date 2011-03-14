@@ -1,12 +1,13 @@
 #!/bin/sh
 
 find "$@" -type f -printf "%s  %p\n" | while read ab; do
-	sum="$(printf %8.8x "${ab%%  *}")"
+	sum="$(printf %16.16x "${ab%%  *}")"
 	nom="${ab#*  }"
 	mdsum="$(dd if="$nom" bs=512 count=1 2>/dev/null | md5sum 2>/dev/null)"
 	mdsum="${mdsum%%  *}"
 	sum="$sum$mdsum"
-	if [ "${#sum}" != "40" ]; then
+	if [ "${#sum}" != "48" ]; then
+		echo "ERROR : $sum $nom" >&2
 		sum="0000000000000000000000000000000000000000"
 	fi
 	echo "$sum  $nom"
