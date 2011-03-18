@@ -48,7 +48,7 @@ while read ab; do
 			for i in "${supprimable[@]}"; do
 				if true; then # diff -q "$orig" "$i" > /dev/null; then
 					qi="${i//\'/$q}"
-					echo "mv -i '$qi' '${qi%/*}/.%${qi##*/}' # '${orig//\'/$q}'"
+					echo "[ -e '$qi' ] && mv -i '$qi' '${qi%/*}/.%${qi##*/}' # '${orig//\'/$q}'"
 				fi
 			done
 		fi

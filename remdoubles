@@ -42,14 +42,19 @@ unset supprimable
 n=0
 orig=""
 q="'\\''" # escaped quote.
-sort | while read ab; do
+#sort | \
+while read ab; do
 	sum="${ab%%  *}"
 	nom="${ab#*  }"
 	if [ "$sum" != "$oldsum" ]; then
 		if [ -n "$orig" ]; then
 			for i in "${supprimable[@]}"; do
-				if diff -q "$orig" "$i" > /dev/null; then
-					echo "rm '${i//\'/$q}'"
+				if [ -e "$orig" ] && [ -e "$i" ] && cat "$i" | diff -q "$orig" - > /dev/null; then
+					destdir="delete/${i%/*}"
+					[ -e "$destdir" ] || mkdir -p "$destdir"
+					mv -i "$i" "$destdir"
+					echo -n '.'
+					#echo "myrm '${i//\'/$q}'"
 				fi
 			done
 		fi

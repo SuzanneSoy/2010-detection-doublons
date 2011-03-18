@@ -1,5 +1,12 @@
 #!/bin/zsh
 
+# masque les dossiers qui ne contiennent que des fichiers dont le nom est
+# .%fichier, récursivement (les dossiers sont masqués en préfixant ".%" à
+# leur nom, donc les dossiers ne contenant que des fichiers / dossiers
+# masqués le seront eux aussi.
+# Un dossier n'est pas masqué ssi il contient au moins un fichier
+# (regular file) ou dossier non masqué.
+
 setopt dotglob
 
 dohide() {
@@ -19,7 +26,7 @@ dohide() {
 		si=$(($si-1))
 		dohide "${subdirs[si]}"
 	done
-	for x in *(N); do
+	for x in *(/,.NoN); do # N = pas d'erreur quand vide, oN = order none, / = dossiers, . = fichiers
 		if [ "${x[0,2]}" != ".%" ]; then
 			pseudo_empty="0"
 			break;
