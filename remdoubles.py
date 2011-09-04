@@ -20,7 +20,11 @@ def identicalFiles(pathA, pathB):
 oldhash = ""
 original = ""
 supprimable = []
+nblines=0
 for line in sys.stdin:
+	nblines = (nblines+1)%500
+	if nblines == 0:
+		os.system("sync");
 	hash = line[0:48]
 	file = line[50:-1]
 	if hash != oldhash:
@@ -39,7 +43,7 @@ for line in sys.stdin:
 					shutil.move(i, destfile);
 		supprimable = []
 		original = ""
-	if file[0:2] == 'c/': # Delete files in the directory named c
+	if file[0:2] == 'd/': # Delete files in the directory named d
 		supprimable.append(file)
 	else:
 		if original == "" and os.path.exists(file):
