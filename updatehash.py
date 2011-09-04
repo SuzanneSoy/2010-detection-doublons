@@ -4,6 +4,7 @@ import hashlib
 import os
 import sqlite3
 import time
+import sys
 
 def checksumFile(path):
 	md5 = hashlib.md5()
@@ -21,7 +22,7 @@ def fileInfo(path):
 	return {'mtime':stat.st_mtime, 'size':stat.st_size}
 
 def initdb(cursor):
-	cursor.execute("create table if not exists files(tag,path primary key,md5,sha1,mtime,size)")
+	cursor.execute("create table if not exists files(tag,timestamp,path primary key,md5,sha1,mtime,size)")
 	cursor.execute("create index if not exists i_files_tag on files(tag)")
 	cursor.execute("create index if not exists i_files_path_md5_sha1 on files(path,md5,sha1)")
 
@@ -31,7 +32,8 @@ def cacheFileInfo(cursor, path):
 	return data and {'mtime':data[0], 'size':data[1]}
 
 def update(connection,cursor,path):
-	currentTime = time.clock()
+	timestamp = time.clock()
+	currentTime = timestamp
 	lastTime = currentTime
 	for d in os.walk(path):
 		dirpath=d[0]
@@ -43,8 +45,8 @@ def update(connection,cursor,path):
 				if fi != cfi:
 					print " updating", fpath
 					md5,sha1 = checksumFile(fpath)
-					values = ('no tag',fpath,md5,sha1,fi['mtime'],fi['size'])
-					cursor.execute("insert or replace into files(tag,path,md5,sha1,mtime,size) values(?,?,?,?,?,?)", values)
+					values = ('no tag',timestamp,fpath,md5,sha1,fi['mtime'],fi['size'])
+					cursor.execute("insert or replace into files(tag,timestamp,path,md5,sha1,mtime,size) values(?,?,?,?,?,?,?)", values)
 					
 					currentTime = time.clock()
 					if abs(lastTime-currentTime) >= 0.1:
@@ -61,4 +63,14 @@ def walk(db,path):
 	connection.commit()
 	cursor.close()
 
-walk('/tmp/files','/home/js')
+def help():
+	print 'Usage : %s database-file directory' % sys.argv[0]
+	sys.exit(1)
+
+if len(sys.argv) < 3:
+	help()
+for arg in sys.argv[1:]:
+	if arg == '-h' or arg == '--help':
+		help()
+
+walk(sys.argv[1], sys.argv[2])
