@@ -44,8 +44,8 @@ def update(connection,cursor,path):
 				cfi = cacheFileInfo(cursor,fpath)
 				if fi != cfi:
 					print " updating", fpath
-					md5,sha1 = checksumFile(fpath)
-					values = ('no tag',timestamp,fpath,md5,sha1,fi['mtime'],fi['size'])
+					sums = checksumFile(fpath)
+					values = ('no tag',timestamp,fpath,sums['md5'],sums['sha1'],fi['mtime'],fi['size'])
 					cursor.execute("insert or replace into files(tag,timestamp,path,md5,sha1,mtime,size) values(?,?,?,?,?,?,?)", values)
 					
 					currentTime = time.clock()
