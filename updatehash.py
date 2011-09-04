@@ -5,6 +5,7 @@ import os
 import sqlite3
 import time
 import sys
+import stat
 
 def checksumFile(path):
 	md5 = hashlib.md5()
@@ -18,8 +19,10 @@ def checksumFile(path):
 			sha1.update(chunk)
 
 def fileInfo(path):
-	stat = os.stat(path)
-	return {'mtime':stat.st_mtime, 'size':stat.st_size}
+	st = os.lstat(path)
+	if not stat.S_ISREG(st.st_mode):
+		return None
+	return {'mtime':st.st_mtime, 'size':st.st_size}
 
 def initdb(cursor):
 	cursor.execute("create table if not exists files(tag,timestamp,path primary key,md5,sha1,mtime,size)")
@@ -41,6 +44,9 @@ def update(connection,cursor,path):
 			fpath = os.path.join(dirpath, f)
 			if os.path.isfile(fpath):
 				fi = fileInfo(fpath)
+				if fi is None:
+					print "!skipping", fpath
+					continue
 				cfi = cacheFileInfo(cursor,fpath)
 				if fi != cfi:
 					print " updating", fpath
