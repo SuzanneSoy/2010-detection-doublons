@@ -32,8 +32,8 @@ def cacheFileInfo(cursor, path):
 	return data and {'mtime':data[0], 'size':data[1]}
 
 def update(connection,cursor,path):
-	timestamp = time.clock()
-	currentTime = timestamp
+	timestamp = time.time()
+	currentTime = time.clock()
 	lastTime = currentTime
 	for d in os.walk(path):
 		dirpath=d[0]
