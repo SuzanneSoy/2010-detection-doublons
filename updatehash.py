@@ -28,7 +28,7 @@ def initdb(cursor):
 	cursor.execute("create table if not exists files(tag,timestamp,path primary key,md5,sha1,mtime,size)")
 	cursor.execute("create index if not exists i_files_tag on files(tag)")
 	cursor.execute("create index if not exists i_files_path_md5_sha1 on files(path,md5,sha1)")
-	cursor.execute("create table removedfiles(rmtimestamp,tag,timestamp,path,md5,sha1,mtime,size)")
+	cursor.execute("create table if not exists removedfiles(rmtimestamp,tag,timestamp,path,md5,sha1,mtime,size)")
 
 def cacheFileInfo(cursor, path):
 	cursor.execute('select mtime,size from files where path = ?', (path,))
