@@ -28,6 +28,7 @@ def initdb(cursor):
 	cursor.execute("create table if not exists files(tag,timestamp,path primary key,md5,sha1,mtime,size)")
 	cursor.execute("create index if not exists i_files_tag on files(tag)")
 	cursor.execute("create index if not exists i_files_path_md5_sha1 on files(path,md5,sha1)")
+	cursor.execute("create table removedfiles(rmtimestamp,tag,timestamp,path,md5,sha1,mtime,size)")
 
 def cacheFileInfo(cursor, path):
 	cursor.execute('select mtime,size from files where path = ?', (path,))
@@ -35,6 +36,8 @@ def cacheFileInfo(cursor, path):
 	return data and {'mtime':data[0], 'size':data[1]}
 
 def update(connection,cursor,path):
+	cursor.execute("create temp table newfiles(path)")
+	cursor.execute("create index i_newfiles_path on newfiles(path)")
 	timestamp = time.time()
 	currentTime = time.clock()
 	lastTime = currentTime
@@ -48,6 +51,7 @@ def update(connection,cursor,path):
 					print "!skipping", fpath
 					continue
 				cfi = cacheFileInfo(cursor,fpath)
+				cursor.execute("insert into newfiles(path) values(?)", (fpath,))
 				if fi != cfi:
 					print " updating", fpath
 					sums = checksumFile(fpath)
@@ -59,6 +63,12 @@ def update(connection,cursor,path):
 						lastTime = currentTime
 						connection.commit()
 						print "commit!"
+	connection.commit()
+	print "commit!"
+	print "cleaning up..."
+	cursor.execute("insert into removedfiles(rmtimestamp,tag,timestamp,path,md5,sha1,mtime,size) select ?,tag,timestamp,path,md5,sha1,mtime,size from files where path not in newfiles", (timestamp,))
+	cursor.execute("delete from files where path not in (select path from newfiles)")
+	connection.commit()
 
 def walk(db,path):
 	connection = sqlite3.connect(db)
@@ -66,7 +76,6 @@ def walk(db,path):
 	cursor = connection.cursor()
 	initdb(cursor)
 	update(connection, cursor, path)
-	connection.commit()
 	cursor.close()
 
 def help():
