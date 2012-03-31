@@ -22,4 +22,4 @@ select (select path from files where rowid == hashesother.id),(select (select pa
 
 # Rename (prepend ".% to file name) files not in folder A which have a duplicate in folder A.
 [ -e hashes.db ] && sqlite3 hashes.db "select (select path from files where rowid == hashesother.id) from hashesother where hashesother.hash in (select hash from hashesA);" > dup.lst
-pv -l dup.lst | while read ab; do file="${ab##*/}"; dir="${ab%/*}"; dest="${dir}/.%${file}"; if [ -e "$ab" ]; then [ "$file" != "${file#.%}" ] || [ -e "$dest" ] || mv -i "$ab" "$dest"; fi; done
+pv -l dup.lst | while read ab; do file="${ab##*/}"; dir="${ab%/*}"; dest="${dir}/.%${file}"; if [ -e "$ab" ]; then [ "$file" != "${file#.%}" ] || [ -e "$dest" ] || mv -i -- "$ab" "$dest"; fi; done
