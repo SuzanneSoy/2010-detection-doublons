@@ -59,7 +59,7 @@ def update(connection,cursor,path):
 					cursor.execute("insert or replace into files(tag,timestamp,path,md5,sha1,mtime,size) values(?,?,?,?,?,?,?)", values)
 					
 					currentTime = time.clock()
-					if abs(lastTime-currentTime) >= 0.1:
+					if abs(lastTime-currentTime) >= 10:
 						lastTime = currentTime
 						connection.commit()
 						print "commit!"
@@ -82,7 +82,7 @@ def help():
 	print 'Usage : %s database-file directory' % sys.argv[0]
 	sys.exit(1)
 
-if len(sys.argv) < 3:
+if len(sys.argv) != 3:
 	help()
 for arg in sys.argv[1:]:
 	if arg == '-h' or arg == '--help':
