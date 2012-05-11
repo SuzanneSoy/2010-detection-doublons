@@ -7,16 +7,17 @@ def walk(path):
 	#print >> sys.stderr, path
 	for f in os.listdir(path):
 		fpath = os.path.join(path, f)
+		if os.path.isdir(fpath) and not os.path.islink(fpath):
+			walk(fpath)
 		if f[0:2] == ".%":
 			ff = f
 			while ff[0:2] == ".%":
 				ff = ff[2:]
 			dest = os.path.join(path, ff)
 			if not os.path.exists(dest):
-				print "i-have-moved -i '%s' '%s'" % (fpath.replace("'", "'\\''"), dest.replace("'", "'\\''"))
+				print "i-have-moved -i -- '%s' '%s'" % (fpath.replace("'", "'\\''"), dest.replace("'", "'\\''"))
 				os.rename(fpath, dest)
-		if os.path.isdir(fpath) and not os.path.islink(fpath):
-			walk(fpath)
+
 def help():
 	print 'Usage : %s directory' % sys.argv[0]
 	sys.exit(1)

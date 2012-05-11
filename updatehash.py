@@ -66,8 +66,13 @@ def update(connection,cursor,path):
 	connection.commit()
 	print "commit!"
 	print "cleaning up..."
-	cursor.execute("insert into removedfiles(rmtimestamp,tag,timestamp,path,md5,sha1,mtime,size) select ?,tag,timestamp,path,md5,sha1,mtime,size from files where path not in newfiles", (timestamp,))
-	cursor.execute("delete from files where path not in (select path from newfiles)")
+	cursor.execute("create temp table deletedfiles(path)")
+	cursor.execute("create index i_deletedfiles_path on deletedfiles(path)")
+	likepath=('' + path).replace('%', '%%') + '%';
+	cursor.execute("insert into deletedfiles(path) select path from files where path like ?", (likepath,));
+	cursor.execute("delete from deletedfiles where path in newfiles");
+	cursor.execute("insert into removedfiles(rmtimestamp,tag,timestamp,path,md5,sha1,mtime,size) select ?,tag,timestamp,path,md5,sha1,mtime,size from files where path in deletedfiles", (timestamp,))
+	cursor.execute("delete from files where path in deletedfiles")
 	connection.commit()
 
 def walk(db,path):
