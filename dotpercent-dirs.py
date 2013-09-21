@@ -17,12 +17,12 @@ def walk(path):
 				if emptysubdir:
 					dest = os.path.join(path, ".%%%s" % f)
 					if not os.path.exists(dest):
-						print "mv -i '%s' '%s'" % (fpath.replace("'", "'\\''"), dest.replace("'", "'\\''"))
+						print "i-have-moved -i -- '%s' '%s'" % (fpath.replace("'", "'\\''"), dest.replace("'", "'\\''"))
 						os.rename(fpath, dest)
 	return emptydir
 
 def help():
-	print 'Usage : %s directory' % sys.argv[0]
+	print 'Usage : %s directory > "undo-dotpercent-dirs-$(date).sh"' % sys.argv[0]
 	sys.exit(1)
 
 if len(sys.argv) != 2:
@@ -32,4 +32,6 @@ for arg in sys.argv[1:]:
 		help()
 
 print "#!/bin/sh"
+print "echo 'Redefine the i-have-moved command at the beginning of this script to undo, e.g.:'"
+print "echo 'i-have-moved() { mv -i -- \"$4\" \"$3\"; }'"
 walk(sys.argv[1])

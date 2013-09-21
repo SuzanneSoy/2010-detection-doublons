@@ -1,3 +1,26 @@
 Attention !
 
-Lisez le code source des scripts avant de les utiliser ! Normalement aucun d'eux ne supprime de fichiers sans une forte confirmation, mais on ne sait jamais...
+Lisez le code source des scripts avant de les utiliser ! Normalement aucun d'eux ne supprime de fichiers sans une forte confirmation, mais on ne sait jamais…
+
+Utilisation
+-----------
+
+Mettre à jour la base de donnée des hash (le script peut être interrompu avec `ctrl-C` et il reprendra là où il s'était arrêté, à quelques secondes près (au dernier message `commit!` en fait):
+
+    ./updatehash.py /home/moi/hash.db /home/moi/documents
+
+Ensuite lancer à la main certaines commandes que j'ai notées dans updatehash.sql (je n'en ai pas encore fait un script)
+
+Puis cacher automatiquement les dossiers qui ne contiennent que des fichiers dont le nom commence par `.%` (et aussi les dossiers vides).
+
+    ./dotpercent-dirs.py /home/moi/documents/vrac > "undo-dotpercent-dirs-$(date).sh"
+
+Ensuite déplacer à la main ce que vous voulez depuis `/home/moi/documents/vrac` vers `/home/moi/documents/tri`
+
+Puis nettoyer les quelques fichiers et dossiers préfixés par `.%` qui ont pu être déplacés dans `/home/moi/documents/tri`:
+
+    ./unhide-dotpercent.py /home/moi/documents/tri > "undo-unhide-dotpercent-tri-$(date).sh"
+
+Puis quand vous avez fini, ou que vous en avez marre, vous pouvez ré-afficher les fichiers et dossiers préfixés par `.%` qui restent dans `/home/moi/documents/vrac`
+
+    ./unhide-dotpercent.py /home/moi/documents/vrac > "undo-unhide-dotpercent-vrac-$(date).sh"

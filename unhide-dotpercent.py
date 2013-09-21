@@ -19,7 +19,7 @@ def walk(path):
 				os.rename(fpath, dest)
 
 def help():
-	print 'Usage : %s directory' % sys.argv[0]
+	print 'Usage : %s directory > "undo-unhide-dotpercent-$(date).sh"' % sys.argv[0]
 	sys.exit(1)
 
 if len(sys.argv) != 2:
@@ -29,4 +29,6 @@ for arg in sys.argv[1:]:
 		help()
 
 print "#!/bin/sh"
+print "echo 'Redefine the i-have-moved command at the beginning of this script to undo, e.g.:'"
+print "echo 'i-have-moved() { mv -i -- \"$4\" \"$3\"; }'"
 walk(sys.argv[1])
