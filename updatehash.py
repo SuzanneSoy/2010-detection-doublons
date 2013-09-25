@@ -6,6 +6,19 @@ import sqlite3
 import time
 import sys
 import stat
+import math
+
+# Common functions
+
+def removePrefix(fileName):
+	while fileName[0:2] == ".%":
+		fileName = fileName[2:]
+	return fileName
+
+def removePrefixPath(path):
+	return '/'.join([removePrefix(component) for component in path.split('/')])
+
+# Code for this utility
 
 def checksumFile(path):
 	md5 = hashlib.md5()
@@ -25,10 +38,9 @@ def fileInfo(path):
 	return {'mtime':st.st_mtime, 'size':st.st_size}
 
 def initdb(cursor):
-	cursor.execute("create table if not exists files(tag,timestamp,path primary key,md5,sha1,mtime,size)")
-	cursor.execute("create index if not exists i_files_tag on files(tag)")
+	cursor.execute("create table if not exists files(timestamp,path primary key,md5,sha1,mtime,size)")
 	cursor.execute("create index if not exists i_files_path_md5_sha1 on files(path,md5,sha1)")
-	cursor.execute("create table if not exists removedfiles(rmtimestamp,tag,timestamp,path,md5,sha1,mtime,size)")
+	cursor.execute("create table if not exists removedfiles(rmtimestamp,timestamp,path,md5,sha1,mtime,size)")
 
 def cacheFileInfo(cursor, path):
 	cursor.execute('select mtime,size from files where path = ?', (path,))
@@ -44,19 +56,25 @@ def update(connection,cursor,path):
 	for d in os.walk(path):
 		dirpath=d[0]
 		for f in d[2]:
-			fpath = os.path.join(dirpath, f)
-			if os.path.isfile(fpath):
-				fi = fileInfo(fpath)
+			prefixPath = os.path.join(dirpath, f)
+			if os.path.isfile(prefixPath):
+				fi = fileInfo(prefixPath)
 				if fi is None:
-					print "!skipping", fpath
+					print "!skipping: no fileinfo: ", prefixPath
 					continue
+				fpath = removePrefixPath(prefixPath)
+				if fpath != prefixPath and os.path.exists(fpath):
+					print "!skipping: collision between '%s' and '%s'" % (prefixPath, fpath,)
 				cfi = cacheFileInfo(cursor,fpath)
 				cursor.execute("insert into newfiles(path) values(?)", (fpath,))
 				if fi != cfi:
-					print " updating", fpath
-					sums = checksumFile(fpath)
-					values = ('no tag',timestamp,fpath,sums['md5'],sums['sha1'],fi['mtime'],fi['size'])
-					cursor.execute("insert or replace into files(tag,timestamp,path,md5,sha1,mtime,size) values(?,?,?,?,?,?,?)", values)
+					if fpath != prefixPath:
+						print " updating %s (%s)" % (prefixPath, fpath,)
+					else:
+						print " updating %s" % (fpath,)
+					sums = checksumFile(prefixPath)
+					values = (timestamp,fpath,sums['md5'],sums['sha1'],fi['mtime'],fi['size'])
+					cursor.execute("insert or replace into files(timestamp,path,md5,sha1,mtime,size) values(?,?,?,?,?,?)", values)
 					
 					currentTime = time.clock()
 					if abs(lastTime-currentTime) >= 10:
@@ -65,14 +83,29 @@ def update(connection,cursor,path):
 						print "commit!"
 	connection.commit()
 	print "commit!"
+
 	print "cleaning up..."
+	likepath=('' + path).replace('%', '%%') + '%';
 	cursor.execute("create temp table deletedfiles(path)")
 	cursor.execute("create index i_deletedfiles_path on deletedfiles(path)")
-	likepath=('' + path).replace('%', '%%') + '%';
 	cursor.execute("insert into deletedfiles(path) select path from files where path like ?", (likepath,));
+
+	nbFilesBefore = cursor.execute("select count(*) from deletedfiles").fetchone()[0];
+	nbFilesAfter = cursor.execute("select count(*) from newfiles").fetchone()[0];
+	print 'number of files before: ', nbFilesBefore
+	print 'number of files after: ', nbFilesAfter
+
 	cursor.execute("delete from deletedfiles where path in newfiles");
-	cursor.execute("insert into removedfiles(rmtimestamp,tag,timestamp,path,md5,sha1,mtime,size) select ?,tag,timestamp,path,md5,sha1,mtime,size from files where path in deletedfiles", (timestamp,))
-	cursor.execute("delete from files where path in deletedfiles")
+	nbFilesDelete = cursor.execute("select count(*) from deletedfiles").fetchone()[0];
+	print 'number of files to remove from database (moved in table removedfiles): ', nbFilesDelete
+	
+	if (nbFilesAfter < math.ceil(nbFilesBefore * 0.5)):
+		print "!!! Not deleting hashes from database: there are less than 50% files after. Did you forget to mount your harddisk?"
+	else:
+		cursor.execute("insert into removedfiles(rmtimestamp,timestamp,path,md5,sha1,mtime,size)"
+					   + " select ?,timestamp,path,md5,sha1,mtime,size from files where path in deletedfiles", (timestamp,))
+		cursor.execute("delete from files where path in deletedfiles")
+	
 	connection.commit()
 
 def walk(db,path):
