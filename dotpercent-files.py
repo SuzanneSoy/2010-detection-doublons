@@ -46,12 +46,12 @@ for arg in sys.argv[2:]:
 	elif state == 'tri':
 		if arg[-1:] == '/':
 			tris.append(arg)
-		else
+		else:
 			tris.append(arg + '/')
 	elif state == 'vrac':
 		if arg[-1:] == '/':
 			vracs.append(arg)
-		else
+		else:
 			vracs.append(arg + '/')
 	else:
 		help()

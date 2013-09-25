@@ -85,7 +85,7 @@ def update(connection,cursor,path):
 	print "commit!"
 
 	print "cleaning up..."
-	likepath=('' + path).replace('%', '%%') + '%';
+	likepath=((path + '') if (path[-1:] == '/') else (path + '/')).replace('%', '%%') + '%';
 	cursor.execute("create temp table deletedfiles(path)")
 	cursor.execute("create index i_deletedfiles_path on deletedfiles(path)")
 	cursor.execute("insert into deletedfiles(path) select path from files where path like ?", (likepath,));
