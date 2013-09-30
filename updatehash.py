@@ -7,6 +7,7 @@ import time
 import sys
 import stat
 import math
+import threading, Queue
 
 # Common functions
 
@@ -20,16 +21,59 @@ def removePrefixPath(path):
 
 # Code for this utility
 
-def checksumFile(path):
-	md5 = hashlib.md5()
-	sha1 = hashlib.sha1()
-	with open(path,'rb') as f: 
-		while True:
-			chunk = f.read(2*md5.block_size*sha1.block_size)
-			if not chunk:
-				return {'md5':md5.hexdigest(), 'sha1':sha1.hexdigest()}
-			md5.update(chunk)
-			sha1.update(chunk)
+md5Jobs = Queue.Queue(4)
+sha1Jobs = Queue.Queue(4)
+# md5Thread is defined below
+# sha1Thread is defined below
+processedFilesCount = 0
+updatedFilesCount = 0
+skippedFilesCount = 0
+processedFoldersCount = 0
+
+class checksumThread(threading.Thread):
+	def __init__(self, hashlibObjectBuilder, jobsQueue):
+		threading.Thread.__init__(self)
+		self.hashlibObjectBuilder = hashlibObjectBuilder
+		self.hashlibObject = hashlibObjectBuilder()
+		self.jobsQueue = jobsQueue
+		self.isAlive = True
+	def run(self):
+		while self.isAlive:
+			chunk = self.jobsQueue.get(block = True)
+			if chunk is not None:
+				self.hashlibObject.update(chunk)
+			self.jobsQueue.task_done()
+	def stop(self):
+		self.isAlive = False
+		# Note: Injecting a string in the queue is a bad idea since it would change the checksum
+		self.jobsQueue.put(None)
+	def getSum(self):
+		self.jobsQueue.join() # Wait until all chunks sent until this point are processed.
+		sum = self.hashlibObject.hexdigest()
+		self.hashlibObject = self.hashlibObjectBuilder()
+		return sum
+
+multithread = True
+if multithread:
+	def checksumFile(path):
+		md5 = hashlib.md5()
+		sha1 = hashlib.sha1()
+		with open(path,'rb') as f: 
+			while True:
+				chunk = f.read(2*md5.block_size*sha1.block_size)
+				if not chunk:
+					return {'md5':md5.hexdigest(), 'sha1':sha1.hexdigest()}
+				md5.update(chunk)
+				sha1.update(chunk)
+else:
+	def checksumFile(path):
+		with open(path,'rb') as f: 
+			while True:
+				chunk = f.read(1048576) # 1 Megabyte
+				if not chunk:
+					return {'md5':md5Thread.getSum(), 'sha1':sha1Thread.getSum()}
+				md5Jobs.put(chunk)
+				sha1Jobs.put(chunk)
 
 def fileInfo(path):
 	st = os.lstat(path)
@@ -48,6 +92,11 @@ def cacheFileInfo(cursor, path):
 	return data and {'mtime':data[0], 'size':data[1]}
 
 def update(connection,cursor,path):
+	global processedFilesCount
+	global processedFoldersCount
+	global updatedFilesCount
+	global skippedFilesCount
+	
 	cursor.execute("create temp table newfiles(path)")
 	cursor.execute("create index i_newfiles_path on newfiles(path)")
 	timestamp = time.time()
@@ -55,19 +104,25 @@ def update(connection,cursor,path):
 	lastTime = currentTime
 	for d in os.walk(path):
 		dirpath=d[0]
+		processedFoldersCount += 1
 		for f in d[2]:
 			prefixPath = os.path.join(dirpath, f)
 			if os.path.isfile(prefixPath):
+				processedFilesCount += 1
 				fi = fileInfo(prefixPath)
 				if fi is None:
+					skippedFilesCount +=1
 					print "!skipping: no fileinfo: ", prefixPath
 					continue
 				fpath = removePrefixPath(prefixPath)
 				if fpath != prefixPath and os.path.exists(fpath):
+					skippedFilesCount +=1
 					print "!skipping: collision between '%s' and '%s'" % (prefixPath, fpath,)
+					continue
 				cfi = cacheFileInfo(cursor,fpath)
 				cursor.execute("insert into newfiles(path) values(?)", (fpath,))
 				if fi != cfi:
+					updatedFilesCount += 1
 					if fpath != prefixPath:
 						print " updating %s (%s)" % (prefixPath, fpath,)
 					else:
@@ -126,4 +181,25 @@ for arg in sys.argv[1:]:
 	if arg == '-h' or arg == '--help':
 		help()
 
+# Start threads and walk the filesystem
+currentTime = time.time()
+md5Thread = checksumThread(hashlib.md5(), md5Jobs);
+md5Thread.start()
+sha1Thread = checksumThread(hashlib.sha1(), sha1Jobs);
+sha1Thread.start()
 walk(sys.argv[1], sys.argv[2])
+md5Thread.stop()
+sha1Thread.stop()
+elapsedTime = time.time()-currentTime
+elapsedTime = round(elapsedTime,3)
+
+# Statistics
+print '\n== Result ================================'
+if elapsedTime > 1:
+	print '    Total elapsed time: ', format(elapsedTime), ' seconds'
+else:
+	print '    Total elapsed time: ', format(elapsedTime), ' second'
+print '    Processed files:', format(processedFilesCount)
+print '    Processed folders:', format(processedFoldersCount)
+print '    Updated files:', format(updatedFilesCount)
+print '    Skipped files:', format(skippedFilesCount)
